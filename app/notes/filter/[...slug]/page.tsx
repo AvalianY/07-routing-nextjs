@@ -1,16 +1,27 @@
-
 import { fetchNotes } from "@/lib/api";
 import NotesClient from "./Notes.client";
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { Metadata } from "next";
+import { isNoteTag } from "@/lib/tags";
+import type { NoteTag } from "@/types/note";
 
 type Props = {
     params: Promise<{ slug: string[] }>;
 }
 
+const getTagFromSlug = (slug: string[]): NoteTag | undefined => {
+    const tagName = slug[0];
+
+    if (!tagName || tagName.toLowerCase() === "all") {
+        return undefined;
+    }
+
+    return isNoteTag(tagName) ? tagName : undefined;
+}
+
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
     const { slug } = await params;
-    const tagName = slug[0];
+    const tagName = slug[0] ?? "all";
 
     return {
         title: `Notes - Filter: ${tagName}`,
@@ -26,7 +37,6 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
                     width: 1200,
                     height: 630,
                     alt: `Note filter ${tagName}`
-
                 }
             ],
             type: 'website',
@@ -34,31 +44,23 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
     }
 }
 
-
-
-
 const NotesByTag = async ({ params }: Props) => {
     const { slug } = await params;
     const queryClient = new QueryClient()
 
-
     const currentPage = 1;
     const searchQuery = '';
-
-    const tagName = slug[0] === "All" ? undefined : slug[0]
+    const tagName = getTagFromSlug(slug);
 
     await queryClient.prefetchQuery({
         queryKey: ['notes', currentPage, searchQuery, tagName],
         queryFn: () => fetchNotes(currentPage, searchQuery, tagName)
     })
 
-
     return (
         <HydrationBoundary state={dehydrate(queryClient)}>
             <NotesClient tag={tagName} />
-
         </HydrationBoundary>
-
     )
 }
 

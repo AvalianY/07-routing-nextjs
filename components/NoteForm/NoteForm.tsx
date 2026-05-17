@@ -23,7 +23,12 @@ const NotesSchema = Yup.object().shape({
   ]).required(),
 });
 
-export default function NoteForm() {
+type Props = {
+  onCancel?: () => void;
+  onSuccess?: () => void;
+};
+
+export default function NoteForm({ onCancel, onSuccess }: Props = {}) {
   const { draft, setDraft, clearDraft } = useNoteDraft();
 
   const fieldId = useId();
@@ -42,7 +47,11 @@ export default function NoteForm() {
         exact: false,
       });
 
-      router.push("/notes/filter/All");
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/notes/filter/all");
+      }
     },
   });
 
@@ -64,7 +73,11 @@ export default function NoteForm() {
   };
 
   const handleCancel = () => {
-    router.back();
+    if (onCancel) {
+      onCancel();
+    } else {
+      router.back();
+    }
   };
 
   useEffect(() => {
